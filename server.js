@@ -113,10 +113,9 @@ app.post("/api/chatbot", async (req, res) => {
               let responseMessage = `${natural_response}\nTìm thấy ${products.length} sản phẩm phù hợp:`;
               return res.status(200).json({ message: responseMessage, products });
           } else {
-              // Logic fallback khi không tìm thấy sản phẩm
               const [popularProducts] = await db
                   .promise()
-                  .query("SELECT * FROM products ORDER BY RAND() LIMIT 3"); // Lấy ngẫu nhiên hoặc theo tiêu chí khác
+                  .query("SELECT * FROM products ORDER BY RAND() LIMIT 3"); 
               if (popularProducts.length > 0) {
                   let responseMessage = `${natural_response}\nKhông tìm thấy sản phẩm nào khớp chính xác. Dưới đây là một số sản phẩm gợi ý:`;
                   return res.status(200).json({ message: responseMessage, products: popularProducts });
@@ -125,7 +124,6 @@ app.post("/api/chatbot", async (req, res) => {
           }
       }
 
-      // --- Intent: product_by_address ---
       if (intent === "product_by_address") {
           let sql = "SELECT * FROM products WHERE address LIKE ?";
           let sqlParams = [`%${params.address}%`];
