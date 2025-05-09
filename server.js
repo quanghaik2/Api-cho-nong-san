@@ -145,15 +145,15 @@ app.post("/api/chatbot", async (req, res) => {
               // Ưu tiên fallback từ suggestion của Gemini nếu có
               let fallbackAddress = suggestion?.nearby_address || null;
 
-              // Logic fallback cứng nếu Gemini không gợi ý (có thể giữ lại hoặc bỏ tùy nhu cầu)
+              // Logic fallback cứng nếu Gemini không gợi ý 
               if (!fallbackAddress) {
                   const addressHierarchy = {
-                      "Đảo Cai": "Cần Thơ", // Ví dụ
-                      "Cần Thơ": "Hậu Giang", // Ví dụ
+                      "Đảo Cai": "Cần Thơ", 
+                      "Cần Thơ": "Hậu Giang", 
                       "Trung Quốc": "Hà Nội",
                       "Anh Quốc": "TP.HCM"
                   };
-                 fallbackAddress = addressHierarchy[params.address] || "Hà Nội"; // Fallback cuối cùng
+                 fallbackAddress = addressHierarchy[params.address] || "Hà Nội";
               }
 
 
@@ -161,7 +161,7 @@ app.post("/api/chatbot", async (req, res) => {
                   console.log(`Không tìm thấy ở "${params.address}", thử tìm ở fallback: "${fallbackAddress}"`);
                   let fallbackSql = "SELECT * FROM products WHERE address LIKE ? LIMIT 3";
                   let fallbackParams = [`%${fallbackAddress}%`];
-                   if (params.product_name) { // Tìm cả tên SP ở địa chỉ fallback
+                   if (params.product_name) { 
                        fallbackSql += " AND name LIKE ?";
                        fallbackParams.push(`%${params.product_name}%`);
                    }
@@ -170,7 +170,6 @@ app.post("/api/chatbot", async (req, res) => {
               }
 
               if (nearbyProducts.length > 0) {
-                  // natural_response từ Gemini có thể đã xử lý việc không tìm thấy ở địa chỉ gốc
                   let responseMessage = `${natural_response}\nĐây là một số sản phẩm gợi ý từ ${fallbackAddress}:`;
                   return res.status(200).json({ message: responseMessage, products: nearbyProducts });
               }
