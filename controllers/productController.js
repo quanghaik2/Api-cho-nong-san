@@ -145,7 +145,6 @@ const uploadProductImage = async (req, res) => {
   }
 };
 
-// Thêm hàm mới để lấy danh sách sản phẩm của một seller
 const getProductsBySellerId = async (req, res) => {
   const sellerId = parseInt(req.params.sellerId);
   if (isNaN(sellerId)) {

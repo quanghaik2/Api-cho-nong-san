@@ -132,7 +132,6 @@ app.post("/api/chatbot", async (req, res) => {
                sql += " AND name LIKE ?";
                sqlParams.push(`%${params.product_name}%`);
            }
-           // Thêm các filter khác nếu cần (price, category)
 
           sql += " LIMIT 20";
 
