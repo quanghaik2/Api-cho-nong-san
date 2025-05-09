@@ -142,10 +142,8 @@ app.post("/api/chatbot", async (req, res) => {
               return res.status(200).json({ message: responseMessage, products });
           } else {
               let nearbyProducts = [];
-              // Ưu tiên fallback từ suggestion của Gemini nếu có
               let fallbackAddress = suggestion?.nearby_address || null;
 
-              // Logic fallback cứng nếu Gemini không gợi ý 
               if (!fallbackAddress) {
                   const addressHierarchy = {
                       "Đảo Cai": "Cần Thơ", 
