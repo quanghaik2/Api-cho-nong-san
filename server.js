@@ -189,7 +189,7 @@ app.post("/api/chatbot", async (req, res) => {
           if (exactProducts.length === 1) {
                productId = exactProducts[0].id;
           } else {
-               // Nếu không tìm thấy tên chính xác hoặc có nhiều, thử tìm LIKE
+               // Nếu không tìm thấy tên chính xác hoặc có nhiều, thử tìm LIKE 
                let [likeProducts] = await db.promise().query("SELECT id FROM products WHERE name LIKE ? LIMIT 1", [`%${params.product_name}%`]);
                if (likeProducts.length === 1) {
                    productId = likeProducts[0].id;
@@ -236,7 +236,7 @@ app.post("/api/chatbot", async (req, res) => {
 
   } catch (error) {
       console.error("Lỗi xử lý chatbot:", error.message, error.stack);
-      // Trả về lỗi 500 chung chung hơn cho client
+      // Trả về lỗi 500 chung chung hơn cho client 
       return res.status(500).json({ message: "Ôi, có lỗi xảy ra trong quá trình xử lý yêu cầu. Bạn thử lại sau nhé!" });
   }
 });
