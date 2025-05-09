@@ -183,8 +183,6 @@ app.post("/api/chatbot", async (req, res) => {
                return res.status(400).json({ message: `${natural_response}\nBạn muốn thêm sản phẩm nào vào giỏ hàng?` });
           }
 
-          // Tìm product_id dựa trên tên. Cần xử lý trường hợp tên không rõ ràng hoặc có nhiều kết quả.
-          // Ưu tiên tìm chính xác tên trước, sau đó mới LIKE
           let [exactProducts] = await db.promise().query("SELECT id FROM products WHERE name = ?", [params.product_name]);
           let productId = null;
 
