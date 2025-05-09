@@ -175,7 +175,6 @@ app.post("/api/chatbot", async (req, res) => {
           }
       }
 
-      // --- Intent: add_to_cart ---
       if (intent === "add_to_cart") {
           if (!userId) { // *** KIỂM TRA USER ID ***
                return res.status(401).json({ message: "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng." });
