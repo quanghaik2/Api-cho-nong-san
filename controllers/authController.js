@@ -115,7 +115,7 @@ const getUserProfile = async (req, res) => {
 
     const token = authHeader.split(" ")[1]; // Lấy token từ "Bearer <token>"
     const decoded = jwt.verify(token, process.env.JWT_SECRET); // Giải mã token
-    const account_id = decoded.id; // Lấy account_id từ token
+    const account_id = decoded.id; 
 
     // Tìm thông tin người dùng bằng account_id
     const userInfo = await UserInfo.findByAccountId(account_id);
@@ -168,7 +168,6 @@ const updateProfile = async (req, res) => {
 // Lấy danh sách tất cả người dùng
 const getAllUsers = async (req, res) => {
   try {
-    // Kiểm tra vai trò admin từ token (tùy chọn, để tăng bảo mật)
     // if (!req.user || req.user.role !== "admin") {
     //   return res.status(403).json({ message: "Yêu cầu quyền admin!" });
     // }

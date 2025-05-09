@@ -11,7 +11,7 @@ exports.getRevenueStats = async (req, res) => {
   const { date, month } = req.query;
 
   try {
-    // Doanh thu hôm nay (đơn hàng delivered trong ngày hiện tại)
+    // Doanh thu hôm nay 
     const today = new Date().toISOString().split("T")[0];
     const revenueQuery = `
       SELECT SUM(oi.quantity * oi.price_at_time) AS total_revenue
