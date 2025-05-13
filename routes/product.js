@@ -19,7 +19,7 @@ router.get("/", authMiddlewareSeller, getProducts);
 router.get("/by-address", getProductsByAddress);
 router.get("/all", getAllProducts);
 // router.get("/seller/:id", getProductById); 
-router.get("/seller/:sellerId", getProductsBySellerId); // Sửa route này để lấy danh sách sản phẩm của seller
+router.get("/seller/:sellerId", getProductsBySellerId);
 router.get("/:id", getProductById);
 router.post("/", authMiddlewareSeller, addProduct);
 router.put("/upload-image", authMiddlewareSeller, upload.single("product_image"), uploadProductImage);
