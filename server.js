@@ -60,8 +60,6 @@ app.set("io", io);
 
 app.post("/api/chatbot", async (req, res) => {
   const { query } = req.body;
-  // *** QUAN TRỌNG: Cần lấy user_id từ middleware xác thực ***
-  // Ví dụ: const userId = req.user?.id; // Giả sử bạn có middleware xác thực gán req. 
   const userId = 1; 
 
   if (!query) {
