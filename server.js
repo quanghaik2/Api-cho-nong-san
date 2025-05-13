@@ -56,13 +56,13 @@ io.on("connection", (socket) => {
 // Lưu io để sử dụng trong các controller
 app.set("io", io);
 
-// File server.js (đoạn xử lý /api/chatbot)
+// File server.js (đoạn xử lý /api/chatbot) 
 
 app.post("/api/chatbot", async (req, res) => {
   const { query } = req.body;
   // *** QUAN TRỌNG: Cần lấy user_id từ middleware xác thực ***
-  // Ví dụ: const userId = req.user?.id; // Giả sử bạn có middleware xác thực gán req.user
-  const userId = 1; // Tạm thời hardcode, CẦN THAY THẾ BẰNG XÁC THỰC THỰC TẾ
+  // Ví dụ: const userId = req.user?.id; // Giả sử bạn có middleware xác thực gán req. 
+  const userId = 1; 
 
   if (!query) {
       return res.status(400).json({ message: "Vui lòng gửi câu hỏi!" });
