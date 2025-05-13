@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // *** THAY ĐỔI MODEL TẠI ĐÂY ***
 const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro-latest", // Hoặc "gemini-1.5-pro" nếu bạn muốn phiên bản cụ thể
+    model: "gemini-2.0-flash", 
     // Cân nhắc thêm cấu hình tạo nội dung để kiểm soát đầu ra tốt hơn
     generationConfig: {
         // temperature: 0.2, // Giảm temperature để kết quả JSON ổn định hơn
