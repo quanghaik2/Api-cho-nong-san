@@ -53,10 +53,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// Lưu io để sử dụng trong các controller
 app.set("io", io);
-
-// File server.js (đoạn xử lý /api/chatbot) 
 
 app.post("/api/chatbot", async (req, res) => {
   const { query } = req.body;
