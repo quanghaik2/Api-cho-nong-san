@@ -119,14 +119,15 @@ app.post("/api/chatbot", async (req, res) => {
           }
       }
 
+      // --- Intent: product_by_address ---
       if (intent === "product_by_address") {
           let sql = "SELECT * FROM products WHERE address LIKE ?";
           let sqlParams = [`%${params.address}%`];
 
-           if (params.product_name) { // Kết hợp tìm theo tên SP nếu có
-               sql += " AND name LIKE ?";
-               sqlParams.push(`%${params.product_name}%`);
-           }
+          if (params.product_name) { // Kết hợp tìm theo tên sản phẩm nếu có
+              sql += " AND name LIKE ?";
+              sqlParams.push(`%${params.product_name}%`);
+          }
 
           sql += " LIMIT 20";
 
@@ -146,18 +147,17 @@ app.post("/api/chatbot", async (req, res) => {
                       "Trung Quốc": "Hà Nội",
                       "Anh Quốc": "TP.HCM"
                   };
-                 fallbackAddress = addressHierarchy[params.address] || "Hà Nội";
+                  fallbackAddress = addressHierarchy[params.address] || "Hà Nội";
               }
-
 
               if (fallbackAddress) {
                   console.log(`Không tìm thấy ở "${params.address}", thử tìm ở fallback: "${fallbackAddress}"`);
                   let fallbackSql = "SELECT * FROM products WHERE address LIKE ? LIMIT 3";
                   let fallbackParams = [`%${fallbackAddress}%`];
-                   if (params.product_name) { 
-                       fallbackSql += " AND name LIKE ?";
-                       fallbackParams.push(`%${params.product_name}%`);
-                   }
+                  if (params.product_name) { 
+                      fallbackSql += " AND name LIKE ?";
+                      fallbackParams.push(`%${params.product_name}%`);
+                  }
 
                   [nearbyProducts] = await db.promise().query(fallbackSql, fallbackParams);
               }
@@ -193,7 +193,6 @@ app.post("/api/chatbot", async (req, res) => {
                }
           }
 
-
           if (productId) {
               const quantity = params.quantity || 1; // Lấy số lượng từ params, mặc định là 1
               await db.promise().query(
@@ -206,25 +205,25 @@ app.post("/api/chatbot", async (req, res) => {
           }
       }
 
-       // --- Intent: view_cart (Ví dụ) ---
-       if (intent === "view_cart") {
-           if (!userId) {
-               return res.status(401).json({ message: "Vui lòng đăng nhập để xem giỏ hàng." });
-           }
-           // Logic lấy thông tin giỏ hàng từ DB
-           const [cartItems] = await db.promise().query(
-               `SELECT p.id, p.name, p.price, c.quantity
-                FROM cart c
-                JOIN products p ON c.product_id = p.id
-                WHERE c.user_id = ?`,
-               [userId]
-           );
-            if (cartItems.length > 0) {
-                 return res.status(200).json({ message: natural_response, cart: cartItems });
-            } else {
-                 return res.status(200).json({ message: "Giỏ hàng của bạn đang trống." });
-            }
-       }
+      // --- Intent: view_cart (Ví dụ) ---
+      if (intent === "view_cart") {
+          if (!userId) {
+              return res.status(401).json({ message: "Vui lòng đăng nhập để xem giỏ hàng." });
+          }
+          // Logic lấy thông tin giỏ hàng từ DB
+          const [cartItems] = await db.promise().query(
+              `SELECT p.id, p.name, p.price, c.quantity
+               FROM cart c
+               JOIN products p ON c.product_id = p.id
+               WHERE c.user_id = ?`,
+              [userId]
+          );
+          if (cartItems.length > 0) {
+              return res.status(200).json({ message: natural_response, cart: cartItems });
+          } else {
+              return res.status(200).json({ message: "Giỏ hàng của bạn đang trống." });
+          }
+      }
 
       // --- Intent: unknown hoặc các intent khác chưa xử lý ---
       return res.status(200).json({ message: natural_response });
