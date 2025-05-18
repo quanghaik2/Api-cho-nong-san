@@ -9,6 +9,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Kiểm tra kết nối
+
 // Hàm gửi email chứa OTP
 const sendOTPEmail = async (to, otp) => {
   const mailOptions = {
