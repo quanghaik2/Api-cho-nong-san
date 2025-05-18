@@ -2,7 +2,6 @@ const db = require("../config/db");
 
 class Notification {
   static async create({ user_id, message, order_id }) {
-    // Kiểm tra xem user_id có tồn tại trong bảng users không
     const [userExists] = await db
       .promise()
       .query("SELECT id FROM accounts WHERE id = ?", [user_id]);
