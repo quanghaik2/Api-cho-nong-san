@@ -104,7 +104,6 @@ const refreshToken = async (req, res) => {
     res.status(401).json({ message: "Refresh Token không hợp lệ hoặc đã hết hạn!" });
   }
 };
-
 const getUserProfile = async (req, res) => {
   try {
     // Lấy token từ header Authorization
