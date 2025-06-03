@@ -2,7 +2,7 @@ const db = require("../config/db");
 const Order = require("../models/Order");
 const OrderItem = require("../models/OrderItem");
 
-// Lấy tất cả đơn hàng của người bán
+// Lấy tất cả đơn hàng của người bán. 
 exports.getSellerOrders = async (req, res) => {
     const { id } = req.user;
     console.log({user: req.user});
