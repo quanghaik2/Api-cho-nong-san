@@ -1,32 +1,51 @@
-// file geminiService.js
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require("@google/generative-ai");
+const axios = require("axios");
 require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// *** THAY ĐỔI MODEL TẠI ĐÂY ***
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash", 
-    // Cân nhắc thêm cấu hình tạo nội dung để kiểm soát đầu ra tốt hơn
-    generationConfig: {
-        // temperature: 0.2, // Giảm temperature để kết quả JSON ổn định hơn
-        responseMimeType: "application/json", // Yêu cầu Gemini trả về trực tiếp JSON
-    },
-    // Cấu hình an toàn (tùy chọn, điều chỉnh nếu cần)
-    safetySettings: [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    ],
+  model: "gemini-2.0-flash",
+  generationConfig: {
+    temperature: 0.2,
+    responseMimeType: "application/json",
+  },
+  safetySettings: [
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  ],
 });
 
 async function processUserQuery(query) {
-    // *** CẢI TIẾN PROMPT ***
-    const prompt = `
-Bạn là một AI phân tích yêu cầu mua hàng. Nhiệm vụ của bạn là phân tích câu hỏi của người dùng và chỉ trả về một đối tượng JSON hợp lệ theo cấu trúc sau, không kèm theo bất kỳ giải thích hay định dạng markdown nào:
+  let searchResults = [];
+
+  const webInfoKeywords = ["nguồn gốc", "đánh giá", "có tốt không", "thông tin", "tại", "chất lượng", "tác dụng", "sức khỏe"];
+  const mightNeedWebInfo = webInfoKeywords.some(keyword => query.toLowerCase().includes(keyword));
+
+  if (mightNeedWebInfo) {
+    try {
+      const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+      const SEARCH_ENGINE_ID = process.env.SEARCH_ENGINE_ID;
+      const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${SEARCH_ENGINE_ID}&q=${encodeURIComponent(query)}`;
+      const searchResponse = await axios.get(searchUrl);
+      searchResults = searchResponse.data.items?.slice(0, 3).map(item => ({
+        title: item.title,
+        snippet: item.snippet,
+        link: item.link,
+      })) || [];
+      console.log("Google Custom Search results:", searchResults);
+    } catch (error) {
+      console.error("Lỗi tìm kiếm web trong Gemini:", error.message);
+      searchResults = [];
+    }
+  }
+
+  const prompt = `
+Bạn là một AI phân tích yêu cầu mua hàng và tìm kiếm thông tin bổ sung từ web. Nhiệm vụ của bạn là phân tích câu hỏi của người dùng và trả về một đối tượng JSON hợp lệ theo cấu trúc sau, không kèm theo bất kỳ giải thích hay định dạng markdown nào:
 {
-  "intent": "search_product | product_by_address | add_to_cart | view_cart | checkout | unknown",
+  "intent": "search_product | product_by_address | add_to_cart | view_cart | checkout | search_web_info | unknown",
   "params": {
     "product_name": "string | null",
     "category": "string | null",
@@ -38,91 +57,91 @@ Bạn là một AI phân tích yêu cầu mua hàng. Nhiệm vụ của bạn l�
   "suggestion": {
     "nearby_address": "string | null"
   },
-  "natural_response": "string"
+  "natural_response": "string",
+  "web_info": "array | null"
 }
 
 QUY TẮC:
 1. Phân tích kỹ: Xác định chính xác intent và trích xuất tất cả params liên quan từ câu hỏi. Nếu không rõ, intent là "unknown".
-2. Chuẩn hóa giá: Chuyển đổi các cách nói về giá (vd: "dưới 200k", "khoảng 1 triệu", "từ 50 đến 100 nghìn") thành price_min, price_max. 1k = 1000.
-3. Xử lý địa chỉ: Nếu người dùng hỏi sản phẩm theo địa chỉ (product_by_address):
-   - Trích xuất địa chỉ chi tiết nhất có thể.
-   - Nếu địa chỉ không được hỗ trợ, hãy đề xuất địa chỉ gần đúng hoặc phổ biến trong suggestion.nearby_address và điều chỉnh natural_response cho phù hợp.
-4. Xử lý tìm sản phẩm (search_product):
-   - Trích xuất product_name cụ thể. Có thể có cả price_min, price_max, category.
-   - natural_response nên xác nhận lại yêu cầu tìm kiếm.
-5. Xử lý thêm vào giỏ (add_to_cart):
-   - Trích xuất product_name và quantity (mặc định là 1 nếu không nói rõ).
-   - natural_response nên xác nhận hành động thêm vào giỏ.
-6. Câu trả lời tự nhiên (natural_response): Luôn tạo một câu phản hồi thân thiện, xác nhận lại yêu cầu hoặc thông báo kết quả dự kiến.
-7. Suggestion: Chỉ điền suggestion.nearby_address khi cần thiết theo quy tắc 3. Các trường hợp khác để {}.
+2. Intent "search_web_info": Nhận diện các câu hỏi yêu cầu thông tin bổ sung từ web (ví dụ: "nguồn gốc của gạo ST25", "đánh giá thịt bò Ninh Kiều", "gạo ST25 có tốt không", "chất lượng của gạo ST25", "gạo ST25 có tác dụng gì đến sức khỏe?", "thông tin về Cần Thơ").
+   - Dựa trên dữ liệu tìm kiếm từ web đã cung cấp (nếu có), trả về câu trả lời trực tiếp, ngắn gọn, tự nhiên và phù hợp, thay vì chỉ gợi ý tìm kiếm.
+   - Nếu không có dữ liệu tìm kiếm, trả về câu trả lời như "Mình không tìm thấy thông tin cụ thể về [sản phẩm/địa chỉ]."
+   - Điền thông tin web vào "web_info" nếu có dữ liệu.
+3. Chuẩn hóa dữ liệu:
+   - Chuẩn hóa product_name: Ví dụ "gạo st 25", "Gạo ST25" thành "gạo ST25".
+   - Chuẩn hóa địa chỉ: Ví dụ "can tho", "Cần Thơ" thành "Cần Thơ".
+   - Nếu câu hỏi chỉ về địa chỉ (ví dụ: "Thông tin về Cần Thơ"), đặt product_name là null.
+4. Xử lý các câu hỏi phụ:
+   - "Chất lượng của [tên sản phẩm]": Trả về thông tin về chất lượng, độ tin cậy hoặc đánh giá sản phẩm.
+   - "[Tên sản phẩm] có tác dụng gì đến sức khỏe?": Trả về thông tin về lợi ích sức khỏe hoặc tác dụng của sản phẩm, nếu có.
+   - "Thông tin về [tên địa chỉ]": Trả về thông tin tổng quan về địa chỉ (vùng miền, đặc sản, v.v.).
+5. Câu trả lời tự nhiên (natural_response): Luôn tạo một câu phản hồi thân thiện, cụ thể với ngữ cảnh, và tự nhiên. Nếu có dữ liệu web, tổng hợp và trả lời trực tiếp; nếu không, thông báo không tìm thấy thông tin.
+6. Suggestion: Chỉ điền suggestion.nearby_address khi cần thiết. Các trường hợp khác để {}.
+7. Web Info: Điền mảng "web_info" với dữ liệu tìm kiếm từ web nếu có (title, snippet, link). Nếu không có, để null.
 8. Output: Chỉ trả về JSON.
 
 VÍ DỤ:
-- "Tìm gạo ST25 giá dưới 250k ở Cần Thơ" →
+- "Chất lượng của gạo ST25" với dữ liệu web: { "title": "Gạo ST25 chất lượng cao", "snippet": "Gạo ST25 được đánh giá là loại gạo thơm ngon, đạt tiêu chuẩn xuất khẩu..." } →
   {
-    "intent": "search_product",
-    "params": { "product_name": "gạo ST25", "price_max": 250000, "address": "Cần Thơ", "category": "gạo", "price_min": null, "quantity": null },
+    "intent": "search_web_info",
+    "params": { "product_name": "gạo ST25", "category": "gạo", "price_min": null, "price_max": null, "address": null, "quantity": null },
     "suggestion": {},
-    "natural_response": "Bạn muốn tìm gạo ST25 giá dưới 250k ở Cần Thơ đúng không? Để mình kiểm tra nhé!"
+    "natural_response": "Gạo ST25 được đánh giá cao về chất lượng, thơm ngon và đạt tiêu chuẩn xuất khẩu.",
+    "web_info": [{ "title": "Gạo ST25 chất lượng cao", "snippet": "Gạo ST25 được đánh giá là loại gạo thơm ngon, đạt tiêu chuẩn xuất khẩu...", "link": "..." }]
   }
-- "Có thịt bò ở quận Ninh Kiều không?" →
+- "Gạo ST25 có tác dụng gì đến sức khỏe?" với dữ liệu web: { "title": "Lợi ích của gạo ST25", "snippet": "Gạo ST25 giàu dinh dưỡng, tốt cho hệ tiêu hóa..." } →
   {
-    "intent": "product_by_address",
-    "params": { "address": "quận Ninh Kiều", "product_name": "thịt bò", "category": "thịt", "price_min": null, "price_max": null, "quantity": null },
+    "intent": "search_web_info",
+    "params": { "product_name": "gạo ST25", "category": "gạo", "price_min": null, "price_max": null, "address": null, "quantity": null },
     "suggestion": {},
-    "natural_response": "Bạn đang tìm thịt bò ở quận Ninh Kiều à? Để mình xem có những loại nào nhé!"
+    "natural_response": "Gạo ST25 giàu dinh dưỡng, hỗ trợ hệ tiêu hóa và tốt cho sức khỏe.",
+    "web_info": [{ "title": "Lợi ích của gạo ST25", "snippet": "Gạo ST25 giàu dinh dưỡng, tốt cho hệ tiêu hóa...", "link": "..." }]
   }
-- "Thêm 2kg thịt ba chỉ vào giỏ" →
+- "Thông tin về Cần Thơ" với dữ liệu web: { "title": "Cần Thơ - Thủ phủ miền Tây", "snippet": "Cần Thơ nổi tiếng với chợ nổi Cái Răng..." } →
   {
-    "intent": "add_to_cart",
-    "params": { "product_name": "thịt ba chỉ", "quantity": 2, "category": "thịt", "price_min": null, "price_max": null, "address": null },
+    "intent": "search_web_info",
+    "params": { "product_name": null, "category": null, "price_min": null, "price_max": null, "address": "Cần Thơ", "quantity": null },
     "suggestion": {},
-    "natural_response": "OK bạn, mình sẽ thêm 2kg thịt ba chỉ vào giỏ hàng của bạn ngay!"
+    "natural_response": "Cần Thơ là thủ phủ miền Tây, nổi tiếng với chợ nổi Cái Răng và nhiều đặc sản hấp dẫn.",
+    "web_info": [{ "title": "Cần Thơ - Thủ phủ miền Tây", "snippet": "Cần Thơ nổi tiếng với chợ nổi Cái Răng...", "link": "..." }]
   }
-- "Tôi muốn mua đồ ăn ở Anh Quốc" →
+- "Chất lượng của gạo ST25" mà không có dữ liệu web →
   {
-    "intent": "product_by_address",
-    "params": { "address": "Anh Quốc", "product_name": null, "category": "đồ ăn", "price_min": null, "price_max": null, "quantity": null },
-    "suggestion": { "nearby_address": "Hà Nội hoặc TP.HCM" },
-    "natural_response": "Xin lỗi bạn, hiện tại mình chưa hỗ trợ giao hàng ở Anh Quốc. Bạn có muốn tham khảo sản phẩm ở Hà Nội hoặc TP.HCM không?"
-  }
-- "Xem giỏ hàng" →
-  {
-    "intent": "view_cart",
-    "params": { "product_name": null, "category": null, "price_min": null, "price_max": null, "address": null, "quantity": null },
+    "intent": "search_web_info",
+    "params": { "product_name": "gạo ST25", "category": "gạo", "price_min": null, "price_max": null, "address": null, "quantity": null },
     "suggestion": {},
-    "natural_response": "Đây là giỏ hàng hiện tại của bạn."
+    "natural_response": "Mình không tìm thấy thông tin cụ thể về chất lượng của gạo ST25.",
+    "web_info": null
   }
+
+Dữ liệu tìm kiếm từ web: ${JSON.stringify(searchResults)}
 
 Câu hỏi: "${query}"
 `;
 
-    try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        // Khi dùng responseMimeType: "application/json", Gemini trả về JSON trực tiếp
-        const responseData = JSON.parse(response.text());
-        return responseData;
-    } catch (error) {
-        console.error("Lỗi Gemini API:", error.message);
-        // Phân tích lỗi chi tiết hơn nếu có thể (vd: blocked due to safety)
-        let errorMessage = "Ôi, mình chưa hiểu câu hỏi của bạn. Bạn có thể nói rõ hơn một chút được không?";
-        if (error.message.includes("Could not parse JSON")) {
-             errorMessage = "Xin lỗi, mình đang gặp chút trục trặc khi xử lý yêu cầu. Bạn thử lại xem sao nhé.";
-             // Có thể log lại prompt và lỗi để debug
-             console.error("Lỗi JSON Parse. Prompt:", prompt);
-        } else if (error.response && error.response.promptFeedback) {
-            // Xử lý nếu bị chặn bởi bộ lọc an toàn
-             console.error("Prompt Feedback:", error.response.promptFeedback);
-             errorMessage = "Yêu cầu của bạn có thể chứa nội dung không phù hợp. Vui lòng thử lại với nội dung khác.";
-        }
-        return {
-            intent: "unknown",
-            params: {},
-            suggestion: {}, // Đảm bảo suggestion luôn là object
-            natural_response: errorMessage
-        };
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const responseData = JSON.parse(response.text());
+    return responseData;
+  } catch (error) {
+    console.error("Lỗi Gemini API:", error.message);
+    let errorMessage = "Ôi, mình chưa hiểu câu hỏi của bạn. Bạn có thể nói rõ hơn một chút được không?";
+    if (error.message.includes("Could not parse JSON")) {
+      errorMessage = "Xin lỗi, mình đang gặp chút trục trặc khi xử lý yêu cầu. Bạn thử lại xem sao nhé.";
+      console.error("Lỗi JSON Parse. Prompt:", prompt);
+    } else if (error.response && error.response.promptFeedback) {
+      console.error("Prompt Feedback:", error.response.promptFeedback);
+      errorMessage = "Yêu cầu của bạn có thể chứa nội dung không phù hợp. Vui lòng thử lại với nội dung khác.";
     }
+    return {
+      intent: "unknown",
+      params: { product_name: null, category: null, price_min: null, price_max: null, address: null, quantity: null },
+      suggestion: { nearby_address: null },
+      natural_response: errorMessage,
+      web_info: null
+    };
+  }
 }
 
 module.exports = { processUserQuery };
