@@ -162,4 +162,6 @@ const getProductsBySellerId = async (req, res) => {
   }
 };
 
+
+
 module.exports = { getProducts, addProduct, updateProduct, deleteProduct, uploadProductImage, getAllProducts, getProductById, getProductsByAddress, getProductsBySellerId };
