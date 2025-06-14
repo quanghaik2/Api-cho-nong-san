@@ -120,15 +120,15 @@ app.post("/api/chatbot", async (req, res) => {
         let nearbyProducts = [];
         let fallbackAddress = suggestion?.nearby_address || null;
 
-        if (!fallbackAddress) {
-          const addressHierarchy = {
-            "Đảo Cai": "Cần Thơ",
-            "Cần Thơ": "Hậu Giang",
-            "Trung Quốc": "Hà Nội",
-            "Anh Quốc": "TP.HCM",
-          };
-          fallbackAddress = addressHierarchy[params.address] || "Hà Nội";
-        }
+        // if (!fallbackAddress) {
+        //   const addressHierarchy = {
+        //     "Đảo Cai": "Cần Thơ",
+        //     "Cần Thơ": "Hậu Giang",
+        //     "Trung Quốc": "Hà Nội",
+        //     "Anh Quốc": "TP.HCM",
+        //   };
+        //   fallbackAddress = addressHierarchy[params.address] || "Hà Nội";
+        // }
 
         if (fallbackAddress) {
           let fallbackSql = "SELECT * FROM products WHERE address LIKE ? LIMIT 3";
