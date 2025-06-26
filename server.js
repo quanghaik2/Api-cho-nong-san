@@ -10,9 +10,12 @@ const notificationRoutes = require("./routes/notification");
 const sellerRoutes = require("./routes/sellerRouter");
 const { webSearch, searchProductInfo } = require("./controllers/webSearchController");
 const { processUserQuery } = require("./services/geminiService");
+const reportRoutes = require("./routes/report");
 const db = require("./config/db");
 const http = require("http");
 const { Server } = require("socket.io");
+const fs = require("fs").promises;
+const { initializeSocket } = require("./websocket");
 
 const app = express();
 const server = http.createServer(app);
@@ -22,6 +25,9 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
+
+// Khởi tạo socket trong websocket.js
+initializeSocket(io);
 
 app.use(cors());
 app.use(express.json());
@@ -36,20 +42,10 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/seller", sellerRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.post("/api/chatbot/web-search", webSearch);
 app.post("/api/chatbot/search-product-info", searchProductInfo);
-
-io.on("connection", (socket) => {
-  console.log("A client connected:", socket.id);
-  socket.on("join", (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined room`);
-  });
-  socket.on("disconnect", () => {
-    console.log("A client disconnected:", socket.id);
-  });
-});
 
 app.set("io", io);
 
@@ -119,16 +115,6 @@ app.post("/api/chatbot", async (req, res) => {
       } else {
         let nearbyProducts = [];
         let fallbackAddress = suggestion?.nearby_address || null;
-
-        // if (!fallbackAddress) {
-        //   const addressHierarchy = {
-        //     "Đảo Cai": "Cần Thơ",
-        //     "Cần Thơ": "Hậu Giang",
-        //     "Trung Quốc": "Hà Nội",
-        //     "Anh Quốc": "TP.HCM",
-        //   };
-        //   fallbackAddress = addressHierarchy[params.address] || "Hà Nội";
-        // }
 
         if (fallbackAddress) {
           let fallbackSql = "SELECT * FROM products WHERE address LIKE ? LIMIT 3";

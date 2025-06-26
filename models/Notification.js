@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 class Notification {
-  static async create({ user_id, message, order_id }) {
+  static async create({ user_id, message, order_id, product_id }) {
     const [userExists] = await db
       .promise()
       .query("SELECT id FROM accounts WHERE id = ?", [user_id]);
@@ -13,8 +13,8 @@ class Notification {
     const [result] = await db
       .promise()
       .query(
-        "INSERT INTO notifications (user_id, message, order_id, created_at) VALUES (?, ?, ?, NOW())",
-        [user_id, message, order_id]
+        "INSERT INTO notifications (user_id, message, order_id, product_id, created_at) VALUES (?, ?, ?, ?, NOW())",
+        [user_id, message, order_id || null, product_id || null]
       );
     return result.insertId;
   }
@@ -23,11 +23,22 @@ class Notification {
     const [rows] = await db
       .promise()
       .query(
-        "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC",
+        "SELECT id, message, created_at, order_id, product_id FROM notifications WHERE user_id = ? ORDER BY created_at DESC",
+        [user_id]
+      );
+    return rows;
+  }
+
+  static async getByUserIdAndProduct(user_id) {
+    const [rows] = await db
+      .promise()
+      .query(
+        "SELECT id, message, created_at, order_id, product_id FROM notifications WHERE user_id = ? AND product_id IS NOT NULL ORDER BY created_at DESC",
         [user_id]
       );
     return rows;
   }
 }
+
 
 module.exports = Notification;
