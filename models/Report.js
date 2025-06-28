@@ -1,9 +1,9 @@
 const db = require("../config/db");
 
 class Report {
-  static async create({ product_id, user_id, reason, evidence_image_url }) {
-    const query = "INSERT INTO reports (product_id, user_id, reason, evidence_image_url) VALUES (?, ?, ?, ?)";
-    const values = [product_id, user_id, reason, evidence_image_url || null];
+  static async create({ product_id, user_id, reason, evidence_image_url, severity }) {
+    const query = "INSERT INTO reports (product_id, user_id, reason, evidence_image_url, severity) VALUES (?, ?, ?, ?, ?)";
+    const values = [product_id, user_id, reason, evidence_image_url || null, severity || 'Trung bình'];
     const [result] = await db.promise().query(query, values);
     return result.insertId;
   }
@@ -31,6 +31,24 @@ class Report {
       JOIN products p ON r.product_id = p.id
       GROUP BY r.product_id, p.name
       ORDER BY latest_report DESC
+      LIMIT ? OFFSET ?
+    `;
+    const [rows] = await db.promise().query(query, [limit, offset]);
+    return rows;
+  }
+
+  static async getSevereReportSummary({ limit = 10, offset = 0 } = {}) {
+    const query = `
+      SELECT 
+        r.product_id,
+        p.name as product_name,
+        COUNT(r.id) as report_count,
+        MAX(r.created_at) as latest_severe_report
+      FROM reports r
+      JOIN products p ON r.product_id = p.id
+      WHERE r.severity = 'Nghiêm trọng'
+      GROUP BY r.product_id, p.name
+      ORDER BY latest_severe_report DESC
       LIMIT ? OFFSET ?
     `;
     const [rows] = await db.promise().query(query, [limit, offset]);

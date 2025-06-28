@@ -10,46 +10,39 @@ const {
   getProductById,
   getProductsByAddress,
   getProductsBySellerId,
+  getAutoHiddenProducts,
+  restoreProduct,
 } = require("../controllers/productController");
 const { authMiddlewareSeller } = require("../middleware/auth");
 const upload = require("../middleware/uploadProductImage");
 
 const router = express.Router();
 
-// Lấy tất cả sản phẩm (public)
-router.get("/all", getAllProducts);
+// Public routes (GET)
+router.get("/all", getAllProducts); // Lấy tất cả sản phẩm
+router.get("/by-address", getProductsByAddress); // Lấy sản phẩm theo địa chỉ
+router.get("/seller/:sellerId", getProductsBySellerId); // Lấy sản phẩm theo seller ID
+router.get("/auto-hidden", getAutoHiddenProducts); // Lấy sản phẩm tự động ẩn
+router.get("/:id", getProductById); // Lấy sản phẩm theo ID
+router.put("/:id/restore", restoreProduct); // Khôi phục sản phẩm
 
-// Lấy sản phẩm theo ID (public)
-router.get("/:id", getProductById);
-
-// Lấy sản phẩm theo địa chỉ (public)
-router.get("/by-address", getProductsByAddress);
-
-// Lấy sản phẩm theo seller ID (public)
-router.get("/seller/:sellerId", getProductsBySellerId);
-
-// Tải ảnh sản phẩm
-router.put("/upload-image", authMiddlewareSeller, upload.single("product_image"), uploadProductImage);
-
-// Tải ảnh giấy phép nguồn gốc sản phẩm
-router.put("/upload-origin-proof", authMiddlewareSeller, upload.single("origin_proof_image"), uploadProductImage);
-
-// Cập nhật sản phẩm
-router.put("/:id", updateProduct);
-
-// Ẩn sản phẩm
-router.put("/:id/hide", hideProduct);
-
-// Các route yêu cầu xác thực seller
+// Protected routes (yêu cầu xác thực seller)
 router.use(authMiddlewareSeller);
 
-// Lấy sản phẩm của seller hiện tại
-router.get("/", getProducts);
+// GET
+router.get("/", getProducts); // Lấy sản phẩm của seller hiện tại
 
-// Thêm sản phẩm mới
-router.post("/", addProduct);
+// POST
+router.post("/", addProduct); // Thêm sản phẩm mới
 
-// Xóa sản phẩm
-router.delete("/:id", deleteProduct);
+// PUT
+router.put("/upload-image", upload.single("product_image"), uploadProductImage); // Tải ảnh sản phẩm
+router.put("/upload-origin-proof", upload.single("origin_proof_image"), uploadProductImage); // Tải ảnh giấy phép nguồn gốc
+router.put("/:id", updateProduct); // Cập nhật sản phẩm
+router.put("/:id/hide", hideProduct); // Ẩn sản phẩm
+
+
+// DELETE
+router.delete("/:id", deleteProduct); // Xóa sản phẩm
 
 module.exports = router;

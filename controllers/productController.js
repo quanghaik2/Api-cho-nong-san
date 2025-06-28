@@ -224,6 +224,29 @@ const deleteProduct = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Lỗi server: " + error.message });
   }
+  
 };
 
-module.exports = { getProducts, addProduct, updateProduct, hideProduct, uploadProductImage, getAllProducts, getProductById, getProductsByAddress, getProductsBySellerId, deleteProduct };
+const getAutoHiddenProducts = async (req, res) => {
+  try {
+    const products = await Product.getAutoHiddenProducts();
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+};
+
+const restoreProduct = async (req, res) => {
+  const productId = req.params.id;
+  try {
+    const product = await Product.restore_product(productId);
+    if (!product) {
+      return res.status(404).json({ message: `Sản phẩm với ID ${productId} không tồn tại!` });
+    }
+    res.status(200).json({ message: `Sản phẩm với ID ${productId} đã được khôi phục`, product });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi server: " + error.message });
+  }
+};
+
+module.exports = { getProducts, addProduct, updateProduct, hideProduct, uploadProductImage, getAllProducts, getProductById, getProductsByAddress, getProductsBySellerId, deleteProduct, getAutoHiddenProducts, restoreProduct };

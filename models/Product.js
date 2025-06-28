@@ -1,3 +1,4 @@
+
 const db = require("../config/db");
 
 class Product {
@@ -97,6 +98,35 @@ class Product {
     await db
       .promise()
       .query("UPDATE products SET is_hidden = 1 WHERE id = ?", [product_id]);
+  }
+
+  static async auto_hide(product_id) {
+    await db
+      .promise()
+      .query("UPDATE products SET is_hidden = 2 WHERE id = ?", [product_id]);
+  }
+
+  static async restore_product(product_id) {
+    await db
+      .promise()
+      .query("UPDATE products SET is_hidden = 0 WHERE id = ?", [product_id]);
+    // Trả về sản phẩm sau khi khôi phục để kiểm tra
+    const [rows] = await db
+      .promise()
+      .query("SELECT * FROM products WHERE id = ?", [product_id]);
+    return rows[0];
+  }
+
+  static async getAutoHiddenProducts() {
+    const [rows] = await db
+      .promise()
+      .query(
+        "SELECT id AS product_id, name AS product_name FROM products WHERE is_hidden = 2"
+      );
+    return rows.map(row => ({
+      ...row,
+      reason: "Sản phẩm bị gỡ do nhận được 3+ báo cáo nghiêm trọng" // Lý do tĩnh
+    }));
   }
 }
 
