@@ -26,6 +26,8 @@ exports.addToCart = async (req, res) => {
   }
 };
 
+
+
 exports.updateCartQuantity = async (req, res) => {
   const { productId, quantity } = req.body;
   try {

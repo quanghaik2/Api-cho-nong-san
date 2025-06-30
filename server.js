@@ -98,6 +98,8 @@ app.post("/api/chatbot", async (req, res) => {
       }
     }
 
+    
+
     if (intent === "product_by_address") {
       let sql = "SELECT * FROM products WHERE address LIKE ?";
       let sqlParams = [params.address ? `%${params.address}%` : "%"];
