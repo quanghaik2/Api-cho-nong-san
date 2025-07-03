@@ -11,6 +11,7 @@ const createReport = async (req, res) => {
   const { product_id, reason } = req.body;
   const evidence_image_urls = req.files ? req.files.map(file => `/report_images/${file.filename}`) : [];
 
+  
   if (!product_id || !reason) {
     return res.status(400).json({ message: "Thiếu thông tin báo cáo (product_id hoặc reason)!" });
   }
